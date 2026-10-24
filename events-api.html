@@ -1,0 +1,95 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AJAX Event Management</title>
+</head>
+<body>
+    <h2>Event Management - Practical 13</h2>
+
+    <input id="title" placeholder="Event title">
+    <input id="date" type="date">
+    <input id="category" placeholder="Category">
+    <input id="description" placeholder="Description">
+
+    <button onclick="addEvent()">Add Event</button>
+
+    <p id="message"></p>
+    <ul id="events"></ul>
+
+    <script>
+    const api = 'api/events.php';
+
+    async function loadEvents() {
+        const response = await fetch(api);
+        const data = await response.json();
+
+        if (!response.ok) {
+            document.getElementById('message').textContent =
+                data.error || 'Could not load events';
+            return;
+        }
+
+        const list = document.getElementById('events');
+        list.replaceChildren();
+
+        data.forEach(event => {
+            const item = document.createElement('li');
+            item.textContent =
+                `${event.title} - ${event.event_date} `;
+
+            const del = document.createElement('button');
+            del.textContent = 'Delete';
+
+            del.onclick = async () => {
+                const result = await fetch(api, {
+                    method: 'DELETE',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({id: event.id})
+                });
+
+                const answer = await result.json();
+                document.getElementById('message').textContent =
+                    answer.message || answer.error;
+
+                if (result.ok) loadEvents();
+            };
+
+            item.appendChild(del);
+            list.appendChild(item);
+        });
+    }
+
+    async function addEvent() {
+        const event = {
+            title: document.getElementById('title').value,
+            event_date: document.getElementById('date').value,
+            category: document.getElementById('category').value,
+            description:
+                document.getElementById('description').value
+        };
+
+        try {
+            const response = await fetch(api, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(event)
+            });
+
+            const data = await response.json();
+            document.getElementById('message').textContent =
+                data.message || data.error;
+
+            if (response.ok) {
+                loadEvents();
+            }
+        } catch {
+            document.getElementById('message').textContent =
+                'Could not connect to the server';
+        }
+    }
+
+    loadEvents();
+    </script>
+</body>
+</html>

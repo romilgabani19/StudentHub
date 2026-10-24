@@ -1,0 +1,27 @@
+[
+  {
+    "id": 1,
+    "question": "How do I register?",
+    "answer": "Open Register, complete each required field, and submit the form."
+  },
+  {
+    "id": 2,
+    "question": "How do I find events?",
+    "answer": "Use the search and category filter on Events."
+  },
+  {
+    "id": 3,
+    "question": "Can I update my profile?",
+    "answer": "Log in and open Profile."
+  },
+  {
+    "id": 4,
+    "question": "What is an admin account?",
+    "answer": "An admin can manage students and events."
+  },
+  {
+    "id": 5,
+    "question": "Is the demo production ready?",
+    "answer": "No, this project is for learning and local testing."
+  }
+]

@@ -1,0 +1,107 @@
+[
+  {
+    "id": 1,
+    "title": "Welcome Week Meetup",
+    "date": "2026-11-02",
+    "category": "Culture",
+    "description": "Meet new classmates and learn about student services."
+  },
+  {
+    "id": 2,
+    "title": "Intro to Web Design",
+    "date": "2026-11-04",
+    "category": "Workshop",
+    "description": "Build your first responsive webpage."
+  },
+  {
+    "id": 3,
+    "title": "Python Practice Lab",
+    "date": "2026-11-06",
+    "category": "Technology",
+    "description": "Practice variables, loops, and lists."
+  },
+  {
+    "id": 4,
+    "title": "Campus Badminton Cup",
+    "date": "2026-11-08",
+    "category": "Sports",
+    "description": "Friendly doubles matches for all levels."
+  },
+  {
+    "id": 5,
+    "title": "UI Design Challenge",
+    "date": "2026-11-10",
+    "category": "Competition",
+    "description": "Design a clear interface for a campus problem."
+  },
+  {
+    "id": 6,
+    "title": "Career Readiness Talk",
+    "date": "2026-11-12",
+    "category": "Workshop",
+    "description": "Prepare a resume and practice interview basics."
+  },
+  {
+    "id": 7,
+    "title": "Robotics Showcase",
+    "date": "2026-11-14",
+    "category": "Technology",
+    "description": "Explore student-built robots and prototypes."
+  },
+  {
+    "id": 8,
+    "title": "Cultural Evening",
+    "date": "2026-11-16",
+    "category": "Culture",
+    "description": "Enjoy performances, music, and art."
+  },
+  {
+    "id": 9,
+    "title": "Cyber Safety Session",
+    "date": "2026-11-18",
+    "category": "Workshop",
+    "description": "Learn safe passwords and online privacy."
+  },
+  {
+    "id": 10,
+    "title": "Mini Hackathon",
+    "date": "2026-11-20",
+    "category": "Competition",
+    "description": "Work in a small team to build a prototype."
+  },
+  {
+    "id": 11,
+    "title": "Football Friendly",
+    "date": "2026-11-22",
+    "category": "Sports",
+    "description": "Join a friendly campus football match."
+  },
+  {
+    "id": 12,
+    "title": "Database Design Lab",
+    "date": "2026-11-24",
+    "category": "Technology",
+    "description": "Learn tables, keys, and relationships."
+  },
+  {
+    "id": 13,
+    "title": "Poster Making Contest",
+    "date": "2026-11-26",
+    "category": "Competition",
+    "description": "Create a poster on a positive campus theme."
+  },
+  {
+    "id": 14,
+    "title": "Photography Walk",
+    "date": "2026-11-28",
+    "category": "Culture",
+    "description": "Capture campus life with a camera or phone."
+  },
+  {
+    "id": 15,
+    "title": "First Aid Awareness",
+    "date": "2026-11-30",
+    "category": "Workshop",
+    "description": "Understand basic emergency response."
+  }
+]

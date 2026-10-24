@@ -1,0 +1,107 @@
+[
+  {
+    "id": 1,
+    "name": "Student 01",
+    "email": "student01@studenthub.test",
+    "course": "BSc IT",
+    "year": 2
+  },
+  {
+    "id": 2,
+    "name": "Student 02",
+    "email": "student02@studenthub.test",
+    "course": "BTech IT",
+    "year": 3
+  },
+  {
+    "id": 3,
+    "name": "Student 03",
+    "email": "student03@studenthub.test",
+    "course": "BCA",
+    "year": 4
+  },
+  {
+    "id": 4,
+    "name": "Student 04",
+    "email": "student04@studenthub.test",
+    "course": "BSc IT",
+    "year": 1
+  },
+  {
+    "id": 5,
+    "name": "Student 05",
+    "email": "student05@studenthub.test",
+    "course": "BTech IT",
+    "year": 2
+  },
+  {
+    "id": 6,
+    "name": "Student 06",
+    "email": "student06@studenthub.test",
+    "course": "BCA",
+    "year": 3
+  },
+  {
+    "id": 7,
+    "name": "Student 07",
+    "email": "student07@studenthub.test",
+    "course": "BSc IT",
+    "year": 4
+  },
+  {
+    "id": 8,
+    "name": "Student 08",
+    "email": "student08@studenthub.test",
+    "course": "BTech IT",
+    "year": 1
+  },
+  {
+    "id": 9,
+    "name": "Student 09",
+    "email": "student09@studenthub.test",
+    "course": "BCA",
+    "year": 2
+  },
+  {
+    "id": 10,
+    "name": "Student 10",
+    "email": "student10@studenthub.test",
+    "course": "BSc IT",
+    "year": 3
+  },
+  {
+    "id": 11,
+    "name": "Student 11",
+    "email": "student11@studenthub.test",
+    "course": "BTech IT",
+    "year": 4
+  },
+  {
+    "id": 12,
+    "name": "Student 12",
+    "email": "student12@studenthub.test",
+    "course": "BCA",
+    "year": 1
+  },
+  {
+    "id": 13,
+    "name": "Student 13",
+    "email": "student13@studenthub.test",
+    "course": "BSc IT",
+    "year": 2
+  },
+  {
+    "id": 14,
+    "name": "Student 14",
+    "email": "student14@studenthub.test",
+    "course": "BTech IT",
+    "year": 3
+  },
+  {
+    "id": 15,
+    "name": "Student 15",
+    "email": "student15@studenthub.test",
+    "course": "BCA",
+    "year": 4
+  }
+]
