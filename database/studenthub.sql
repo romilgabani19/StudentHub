@@ -5,6 +5,7 @@ USE studenthub;
 
 SET FOREIGN_KEY_CHECKS = 0;
 DROP TABLE IF EXISTS audit_logs;
+DROP TABLE IF EXISTS password_resets;
 DROP TABLE IF EXISTS registrations;
 DROP TABLE IF EXISTS students;
 DROP TABLE IF EXISTS events;
@@ -23,6 +24,17 @@ CREATE TABLE users (
   role ENUM('student','admin') NOT NULL DEFAULT 'student',
   last_login DATETIME NULL,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
+CREATE TABLE password_resets (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  user_id INT UNSIGNED NOT NULL,
+  token_hash CHAR(64) NOT NULL UNIQUE,
+  expires_at DATETIME NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_password_resets_user_id (user_id),
+  CONSTRAINT fk_password_resets_user FOREIGN KEY (user_id)
+    REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
 CREATE TABLE students (

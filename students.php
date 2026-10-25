@@ -2,168 +2,30 @@
 <?php
 $pageTitle = 'Student Management';
 
-require_once __DIR__ . '/includes/header.php';
-require_once __DIR__ . '/includes/functions.php';
 require_once __DIR__ . '/config/db.php';
+require_once __DIR__ . '/includes/functions.php';
+require_once __DIR__ . '/includes/header.php';
 
 require_admin();
 
-$message = '';
-$error = '';
-
-$allowedCourses = ['AIML', 'CSE', 'IT', 'CE'];
-$allowedSemesters = range(1, 8);
-
-// Handle form submissions
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $action = $_POST['action'] ?? '';
-
-    // Delete student
-    if ($action === 'delete') {
-        $id = filter_input(INPUT_POST, 'id', FILTER_VALIDATE_INT);
-
-        if ($id) {
-            try {
-                $stmt = $pdo->prepare(
-                    'DELETE FROM students WHERE id = ?'
-                );
-                $stmt->execute([$id]);
-
-                if ($stmt->rowCount() > 0) {
-                    $message = 'Student deleted successfully.';
-
-                    audit(
-                        $pdo,
-                        (int)$_SESSION['user']['id'],
-                        'student.delete',
-                        'Student ID ' . $id
-                    );
-                } else {
-                    $error = 'Student record not found.';
-                }
-            } catch (PDOException $e) {
-                error_log('Student delete error: ' . $e->getMessage());
-                $error = 'Unable to delete the student record.';
-            }
-        } else {
-            $error = 'Invalid student ID.';
-        }
-    }
-
-    // Add or update student
-    elseif (in_array($action, ['add', 'update'], true)) {
-        $id = filter_input(INPUT_POST, 'id', FILTER_VALIDATE_INT);
-
-        $name = trim($_POST['full_name'] ?? '');
-        $email = trim($_POST['email'] ?? '');
-        $course = trim($_POST['course'] ?? '');
-        $semesterInput = trim($_POST['semester'] ?? '');
-
-        $semester = ctype_digit($semesterInput)
-            ? (int)$semesterInput
-            : 0;
-
-        // Validate form data
-        if (
-            $name === '' ||
-            strlen($name) > 120 ||
-            !filter_var($email, FILTER_VALIDATE_EMAIL) ||
-            strlen($email) > 190 ||
-            !in_array($course, $allowedCourses, true) ||
-            !in_array($semester, $allowedSemesters, true) ||
-            ($action === 'update' && !$id)
-        ) {
-            $error = 'Please check the name, email, course, and semester.';
-        } else {
-            try {
-                if ($action === 'add') {
-                    $stmt = $pdo->prepare(
-                        "INSERT INTO students
-                        (full_name, email, course, semester, status, created_at)
-                        VALUES (?, ?, ?, ?, 'active', NOW())"
-                    );
-
-                    $stmt->execute([
-                        $name,
-                        $email,
-                        $course,
-                        $semester
-                    ]);
-
-                    $message = 'Student added successfully.';
-
-                    audit(
-                        $pdo,
-                        (int)$_SESSION['user']['id'],
-                        'student.add',
-                        $email
-                    );
-                } else {
-                    $stmt = $pdo->prepare(
-                        'UPDATE students
-                         SET full_name = ?, email = ?, course = ?, semester = ?
-                         WHERE id = ?'
-                    );
-
-                    $stmt->execute([
-                        $name,
-                        $email,
-                        $course,
-                        $semester,
-                        $id
-                    ]);
-
-                    $message = 'Student updated successfully.';
-
-                    audit(
-                        $pdo,
-                        (int)$_SESSION['user']['id'],
-                        'student.update',
-                        $email
-                    );
-                }
-            } catch (PDOException $e) {
-                error_log('Student save error: ' . $e->getMessage());
-
-                if ($e->getCode() === '23000') {
-                    $error = 'This email or student record may already exist.';
-                } else {
-                    $error = 'Unable to save the student. Check the database configuration.';
-                }
-            }
-        }
-    }
+if (session_status() !== PHP_SESSION_ACTIVE) {
+    session_start();
 }
 
-// Search students
-$q = trim($_GET['q'] ?? '');
+if (empty($_SESSION['students_csrf'])) {
+    $_SESSION['students_csrf'] = bin2hex(random_bytes(32));
+}
 
-$stmt = $pdo->prepare(
-    'SELECT id, full_name, email, course, semester, status
-     FROM students
-     WHERE status != ?
-       AND (full_name LIKE ? OR email LIKE ? OR course LIKE ?)
-     ORDER BY id DESC
-     LIMIT 100'
-);
-
-$like = '%' . $q . '%';
-
-$stmt->execute([
-    'deleted',
-    $like,
-    $like,
-    $like
-]);
-
-$students = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$csrfToken = $_SESSION['students_csrf'];
+$allowedCourses = ['AIML', 'CSE', 'IT', 'CE'];
+$allowedSemesters = range(1, 8);
 ?>
 
 <style>
 .students-page {
     max-width: 1200px;
     margin: 45px auto;
-    padding: 0 24px;
+    padding: 0 24px 40px;
     color: var(--text-color, inherit);
 }
 
@@ -172,8 +34,8 @@ $students = $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
 .students-page h1 {
-    font-size: 32px;
-    margin-bottom: 8px;
+    font-size: clamp(2rem, 3vw, 2.5rem);
+    margin: 8px 0 10px;
 }
 
 .students-page .eyebrow {
@@ -181,6 +43,7 @@ $students = $stmt->fetchAll(PDO::FETCH_ASSOC);
     font-size: 13px;
     font-weight: 700;
     letter-spacing: 2px;
+    margin: 0;
 }
 
 .students-page .panel {
@@ -188,23 +51,87 @@ $students = $stmt->fetchAll(PDO::FETCH_ASSOC);
     margin-bottom: 28px;
     border: 1px solid rgba(148, 163, 184, .22);
     border-radius: 16px;
-    background: rgba(30, 41, 59, .45);
+    background: rgba(15, 23, 42, .72);
+    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.12);
+}
+
+.students-page .panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 18px;
+}
+
+.students-page .student-alert {
+    display: none;
+    padding: 12px 16px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    font-weight: 600;
+}
+
+.students-page .student-alert.visible {
+    display: block;
+}
+
+.students-page .student-alert.success {
+    background: rgba(20, 83, 45, 0.9);
+    color: #dcfce7;
+}
+
+.students-page .student-alert.error {
+    background: rgba(127, 29, 29, 0.88);
+    color: #fee2e2;
+}
+
+.students-page .secondary-button {
+    background: transparent;
+    border: 1px solid rgba(148, 163, 184, .35);
+    color: #e2e8f0;
+}
+
+.students-page .secondary-button.hidden {
+    display: none;
 }
 
 .students-page input,
 .students-page select {
     width: 100%;
     padding: 12px 14px;
-    border: 1px solid #39445d;
+    border: 1px solid rgba(148, 163, 184, .4);
     border-radius: 8px;
-    background: #1b2235;
-    color: #fff;
+    background: #0f172a;
+    color: #f8fafc;
     box-sizing: border-box;
+}
+
+.students-page .field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.students-page .field label {
+    font-weight: 600;
+}
+
+.students-page .form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px 20px;
+}
+
+.students-page .form-actions {
+    display: flex;
+    align-items: end;
 }
 
 .students-page button,
 .students-page .btn {
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     padding: 11px 16px;
     border: 0;
     border-radius: 8px;
@@ -212,27 +139,42 @@ $students = $stmt->fetchAll(PDO::FETCH_ASSOC);
     color: #fff;
     cursor: pointer;
     text-decoration: none;
+    font-weight: 700;
 }
 
-.students-page button:hover {
+.students-page button:hover,
+.students-page .btn:hover {
     background: #4338ca;
 }
 
-.students-page .form-grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 20px;
+.students-page .btn-danger {
+    background: #b91c1c;
 }
 
-.students-page .field label {
-    display: block;
-    margin-bottom: 8px;
+.students-page .btn-danger:hover {
+    background: #991b1b;
+}
+
+.students-page .toolbar {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    margin-bottom: 18px;
+}
+
+.students-page .toolbar label {
+    font-weight: 600;
+}
+
+.students-page .toolbar input {
+    flex: 1;
 }
 
 .students-page .table-wrap {
     overflow-x: auto;
     border: 1px solid rgba(148, 163, 184, .22);
     border-radius: 12px;
+    background: rgba(15, 23, 42, .62);
 }
 
 .students-page table {
@@ -243,8 +185,9 @@ $students = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 .students-page th,
 .students-page td {
-    padding: 14px;
-    border-bottom: 1px solid rgba(148, 163, 184, .18);
+    padding: 14px 16px;
+    border-bottom: 1px solid rgba(148, 163, 184, .16);
+    vertical-align: top;
 }
 
 .students-page th {
@@ -255,72 +198,32 @@ $students = $stmt->fetchAll(PDO::FETCH_ASSOC);
     border-bottom: none;
 }
 
-.students-page .toolbar {
-    display: flex;
-    gap: 12px;
-    margin-bottom: 20px;
-}
-
-.students-page .toolbar input {
-    flex: 1;
-}
-
 .students-page .table-actions {
     display: flex;
+    gap: 8px;
     flex-wrap: wrap;
-    align-items: flex-start;
-    gap: 10px;
 }
 
-.students-page details {
-    min-width: 70px;
+.students-page .table-status {
+    display: inline-block;
+    padding: 5px 10px;
+    border-radius: 999px;
+    background: rgba(16, 185, 129, .16);
+    color: #a7f3d0;
+    font-size: .8rem;
+    font-weight: 700;
+    text-transform: capitalize;
 }
 
-.students-page summary {
-    cursor: pointer;
-    color: #a5b4fc;
-    margin-bottom: 10px;
+.students-page .empty-row td {
+    padding: 18px;
+    color: #cbd5e1;
 }
 
-.students-page .edit-form {
-    min-width: 220px;
-    display: grid;
-    gap: 12px;
-    padding: 12px;
-}
-
-.students-page .small-button {
-    padding: 8px 12px;
-}
-
-.students-page .delete-button {
-    background: #b91c1c;
-}
-
-.students-page .delete-button:hover {
-    background: #991b1b;
-}
-
-.students-page .success-message {
-    padding: 12px 16px;
-    border-radius: 8px;
-    background: #14532d;
-    color: #dcfce7;
-    margin-bottom: 20px;
-}
-
-.students-page .error-message {
-    padding: 12px 16px;
-    border-radius: 8px;
-    background: #7f1d1d;
-    color: #fee2e2;
-    margin-bottom: 20px;
-}
-
-@media (max-width: 650px) {
+@media (max-width: 760px) {
     .students-page {
         margin: 25px auto;
-        padding: 0 14px;
+        padding: 0 14px 28px;
     }
 
     .students-page .form-grid {
@@ -329,55 +232,43 @@ $students = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     .students-page .toolbar {
         flex-direction: column;
+        align-items: stretch;
+    }
+
+    .students-page .panel-header {
+        flex-direction: column;
+        align-items: flex-start;
     }
 }
 </style>
 
 <main class="students-page">
-
     <header class="page-heading">
         <p class="eyebrow">ADMIN TOOLS</p>
         <h1>Student management</h1>
-        <p>Add, search, edit, and delete student records.</p>
+        <p>Fetch-based CRUD using PHP JSON API and MySQL.</p>
     </header>
 
-    <?php if ($message !== ''): ?>
-        <p class="success-message" role="status">
-            <?= e($message) ?>
-        </p>
-    <?php endif; ?>
-
-    <?php if ($error !== ''): ?>
-        <p class="error-message" role="alert">
-            <?= e($error) ?>
-        </p>
-    <?php endif; ?>
+    <div id="student-alert" class="student-alert" role="status" aria-live="polite"></div>
 
     <section class="panel">
-        <h2>Add a student</h2>
+        <div class="panel-header">
+            <h2 id="form-title">Add a student</h2>
+            <button type="button" id="cancel-edit" class="secondary-button hidden">Cancel</button>
+        </div>
 
-        <form method="post" class="form-grid">
-            <input type="hidden" name="action" value="add">
+        <form id="student-form" class="form-grid" novalidate>
+            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
+            <input type="hidden" id="student-id" name="id" value="">
 
             <div class="field">
                 <label for="full_name">Full name</label>
-                <input
-                    id="full_name"
-                    name="full_name"
-                    maxlength="120"
-                    required
-                >
+                <input id="full_name" name="full_name" maxlength="120" required>
             </div>
 
             <div class="field">
                 <label for="email">Email</label>
-                <input
-                    id="email"
-                    name="email"
-                    type="email"
-                    maxlength="190"
-                    required
-                >
+                <input id="email" name="email" type="email" maxlength="190" required>
             </div>
 
             <div class="field">
@@ -385,9 +276,7 @@ $students = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 <select id="course" name="course" required>
                     <option value="">Choose course</option>
                     <?php foreach ($allowedCourses as $item): ?>
-                        <option value="<?= e($item) ?>">
-                            <?= e($item) ?>
-                        </option>
+                        <option value="<?= htmlspecialchars($item, ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($item, ENT_QUOTES, 'UTF-8') ?></option>
                     <?php endforeach; ?>
                 </select>
             </div>
@@ -397,32 +286,28 @@ $students = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 <select id="semester" name="semester" required>
                     <option value="">Choose semester</option>
                     <?php foreach ($allowedSemesters as $item): ?>
-                        <option value="<?= $item ?>">
-                            Semester <?= $item ?>
-                        </option>
+                        <option value="<?= (int) $item ?>">Semester <?= (int) $item ?></option>
                     <?php endforeach; ?>
                 </select>
             </div>
 
-            <div class="field">
-                <button type="submit">Add student</button>
+            <div class="field form-actions">
+                <button id="submit-student" type="submit">Add student</button>
             </div>
         </form>
     </section>
 
-    <form class="toolbar" method="get">
-        <label for="q" style="display:none">Search students</label>
-        <input
-            id="q"
-            name="q"
-            value="<?= e($q) ?>"
-            placeholder="Search name, email, or course"
-        >
-        <button type="submit">Search</button>
-        <?php if ($q !== ''): ?>
-            <a class="btn" href="students.php">Clear</a>
-        <?php endif; ?>
-    </form>
+    <section class="panel">
+        <div class="toolbar">
+            <label for="student-search">Search</label>
+            <input
+                id="student-search"
+                type="search"
+                placeholder="Search by name, email, or course"
+                aria-label="Search students"
+            >
+        </div>
+    </section>
 
     <div class="table-wrap">
         <table>
@@ -436,132 +321,13 @@ $students = $stmt->fetchAll(PDO::FETCH_ASSOC);
                     <th>Actions</th>
                 </tr>
             </thead>
-
-            <tbody>
-                <?php if (empty($students)): ?>
-                    <tr>
-                        <td colspan="6">No students found.</td>
-                    </tr>
-                <?php else: ?>
-                    <?php foreach ($students as $s): ?>
-                        <tr>
-                            <td><?= e($s['full_name']) ?></td>
-                            <td><?= e($s['email']) ?></td>
-                            <td><?= e($s['course']) ?></td>
-                            <td><?= e((string)$s['semester']) ?></td>
-                            <td><?= e($s['status']) ?></td>
-
-                            <td>
-                                <div class="table-actions">
-                                    <details>
-                                        <summary>Edit</summary>
-
-                                        <form
-                                            method="post"
-                                            class="edit-form"
-                                        >
-                                            <input
-                                                type="hidden"
-                                                name="action"
-                                                value="update"
-                                            >
-
-                                            <input
-                                                type="hidden"
-                                                name="id"
-                                                value="<?= (int)$s['id'] ?>"
-                                            >
-
-                                            <div class="field">
-                                                <label>Name</label>
-                                                <input
-                                                    name="full_name"
-                                                    maxlength="120"
-                                                    value="<?= e($s['full_name']) ?>"
-                                                    required
-                                                >
-                                            </div>
-
-                                            <div class="field">
-                                                <label>Email</label>
-                                                <input
-                                                    name="email"
-                                                    type="email"
-                                                    maxlength="190"
-                                                    value="<?= e($s['email']) ?>"
-                                                    required
-                                                >
-                                            </div>
-
-                                            <div class="field">
-                                                <label>Course</label>
-                                                <select name="course" required>
-                                                    <?php foreach ($allowedCourses as $item): ?>
-                                                        <option
-                                                            value="<?= e($item) ?>"
-                                                            <?= $item === $s['course'] ? 'selected' : '' ?>
-                                                        >
-                                                            <?= e($item) ?>
-                                                        </option>
-                                                    <?php endforeach; ?>
-                                                </select>
-                                            </div>
-
-                                            <div class="field">
-                                                <label>Semester</label>
-                                                <select name="semester" required>
-                                                    <?php foreach ($allowedSemesters as $item): ?>
-                                                        <option
-                                                            value="<?= $item ?>"
-                                                            <?= $item === (int)$s['semester'] ? 'selected' : '' ?>
-                                                        >
-                                                            Semester <?= $item ?>
-                                                        </option>
-                                                    <?php endforeach; ?>
-                                                </select>
-                                            </div>
-
-                                            <button
-                                                type="submit"
-                                                class="small-button"
-                                            >
-                                                Save changes
-                                            </button>
-                                        </form>
-                                    </details>
-
-                                    <form
-                                        method="post"
-                                        onsubmit="return confirm('Delete this student record?')"
-                                    >
-                                        <input
-                                            type="hidden"
-                                            name="action"
-                                            value="delete"
-                                        >
-
-                                        <input
-                                            type="hidden"
-                                            name="id"
-                                            value="<?= (int)$s['id'] ?>"
-                                        >
-
-                                        <button
-                                            type="submit"
-                                            class="small-button delete-button"
-                                        >
-                                            Delete
-                                        </button>
-                                    </form>
-                                </div>
-                            </td>
-                        </tr>
-                    <?php endforeach; ?>
-                <?php endif; ?>
+            <tbody id="students-table-body">
+                <tr>
+                    <td colspan="6" class="empty-row">Loading students...</td>
+                </tr>
             </tbody>
         </table>
     </div>
-
 </main>
 
 <?php require_once __DIR__ . '/includes/footer.php'; ?>
